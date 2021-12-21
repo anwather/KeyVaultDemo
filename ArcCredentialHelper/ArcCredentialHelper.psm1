@@ -50,7 +50,13 @@ class ArcCredentialHelper {
             $response = $_.Exception.Response
         }
 
-        $secretFile = Get-ChildItem $env:ProgramData\AzureConnectedMachineAgent\Tokens | Sort-Object LastWriteTime | Select-Object -First 1
+        if ($global:IsWindows) {
+            $secretFile = Get-ChildItem $env:ProgramData\AzureConnectedMachineAgent\Tokens | Sort-Object LastWriteTime | Select-Object -First 1
+        }
+        else {
+            $secretFile = Get-ChildItem '/var/opt/azcmagent/tokens' | Sort-Object LastWriteTime | Select-Object -First 1
+        }
+        
     
         $secret = Get-Content -Raw $secretFile
         $response = Invoke-WebRequest -Method GET -Uri $endpoint -Headers @{Metadata = 'True'; Authorization = "Basic $secret" } -UseBasicParsing
@@ -60,10 +66,22 @@ class ArcCredentialHelper {
     
         $secretObject = Invoke-RestMethod -Uri https://$KeyVaultName.vault.azure.net/secrets/$SecretName`?api-version=2016-10-01 -Method GET -Headers @{Authorization = "Bearer $token" }
         if ($this.Encrypted) {
-            $secretObject.Value | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString | Out-File "$(Split-Path $secretFile -Parent)\$OutputId" -Force
+            if ($global:IsWindows) {
+                $secretObject.Value | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString | Out-File "$(Split-Path $secretFile -Parent)\$OutputId" -Force
+            }
+            else {
+                $secretObject.Value | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString | Out-File "$(Split-Path $secretFile -Parent)/$OutputId" -Force
+            }
+           
         }
         else {
-            $secretObject.Value | Out-File "$(Split-Path $secretFile -Parent)\$OutputId" -Force
+            if ($global:IsWindows) {
+                $secretObject.Value | Out-File "$(Split-Path $secretFile -Parent)\$OutputId" -Force
+            }
+            else {
+                $secretObject.Value | Out-File "$(Split-Path $secretFile -Parent)/$OutputId" -Force
+            }
+            
         }
         
     }
