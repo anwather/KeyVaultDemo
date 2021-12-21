@@ -11,6 +11,7 @@ Configuration ArcCredentialTest {
         }
 
         Script s1 {
+            # this bit doesn't work it is just to show how to consume the credential from the file. 
             GetScript  = { return @{Present = $true } }
             TestScript = {
                 $c = Get-Content "C:\ProgramData\AzureConnectedMachineAgent\Tokens\mySecret"
